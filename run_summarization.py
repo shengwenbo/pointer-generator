@@ -28,6 +28,7 @@ from model import SummarizationModel
 from decode import BeamSearchDecoder
 import util
 from tensorflow.python import debug as tf_debug
+from format_data import TRAIN_SIZE
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -46,7 +47,7 @@ tf.app.flags.DEFINE_string('exp_name', '', 'Name for experiment. Logs will be sa
 # Hyperparameters
 tf.app.flags.DEFINE_integer('hidden_dim', 256, 'dimension of RNN hidden states')
 tf.app.flags.DEFINE_integer('emb_dim', 128, 'dimension of word embeddings')
-tf.app.flags.DEFINE_integer('batch_size', 16, 'minibatch size')
+tf.app.flags.DEFINE_integer('batch_size', 64, 'minibatch size')
 tf.app.flags.DEFINE_integer('max_enc_steps', 400, 'max timesteps of encoder (max source text tokens)')
 tf.app.flags.DEFINE_integer('max_dec_steps', 100, 'max timesteps of decoder (max summary tokens)')
 tf.app.flags.DEFINE_integer('beam_size', 4, 'beam size for beam search decoding.')
@@ -188,8 +189,12 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
     if FLAGS.debug: # start the tensorflow debugger
       sess = tf_debug.LocalCLIDebugWrapperSession(sess)
       sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
+    total_count = 0
     while True: # repeats until interrupted
       batch = batcher.next_batch()
+
+      total_count += 1
+      tf.logging.info('total query count: %d = %d*%d', total_count, TRAIN_SIZE, total_count // TRAIN_SIZE )
 
       tf.logging.info('running training step...')
       t0=time.time()
@@ -296,7 +301,7 @@ def main(unused_argv):
   hps_dict = {}
   for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list
-      hps_dict[key] = val # add it to the dict
+      hps_dict[key] = val._value # add it to the dict
   hps = namedtuple("HParams", hps_dict.keys())(**hps_dict)
 
   # Create a batcher object that will create minibatches of datas
@@ -304,14 +309,14 @@ def main(unused_argv):
 
   tf.set_random_seed(111) # a seed value for randomness
 
-  if hps.mode._value == 'train':
+  if hps.mode == 'train':
     print("creating model...")
     model = SummarizationModel(hps, vocab)
     setup_training(model, batcher)
-  elif hps.mode._value == 'eval':
+  elif hps.mode == 'eval':
     model = SummarizationModel(hps, vocab)
     run_eval(model, batcher, vocab)
-  elif hps.mode._value == 'decode':
+  elif hps.mode == 'decode':
     decode_model_hps = hps  # This will be the hyperparameters for the decoder model
     decode_model_hps = hps._replace(max_dec_steps=1) # The model is configured with max_dec_steps=1 because we only ever run one step of the decoder at a time (to do beam search). Note that the batcher is initialized with max_dec_steps equal to e.g. 100 because the batches need to contain the full summaries
     model = SummarizationModel(decode_model_hps, vocab)

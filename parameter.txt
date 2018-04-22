@@ -1,0 +1,8 @@
+----train----
+
+--mode=train
+--data_path=./datas/new/train.bin
+--vocab_path=./datas/new/vocab
+--log_root=./log
+--exp_name=myexperiment
+

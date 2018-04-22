@@ -14,9 +14,9 @@ val_file = "./datas/origin/val.txt"
 test_file = "./datas/origin/test.txt"
 finished_files_dir = "./datas/new"
 
-TRAIN_SIZE = 1000
-VAL_SIZE = 100
-TEST_SIZE = 10
+TRAIN_SIZE = 700000
+VAL_SIZE = 10000
+TEST_SIZE = 1000
 
 VOCAB_SIZE = 200000
 
@@ -48,7 +48,7 @@ def write_to_bin(input_file, out_file, makevocab=False):
                     for c in corrects:
                         c = " ".join(list(c))
                         write_sent_pairs(origin, c, writer)
-                        write_sent_pairs(c, c, writer)
+                        # write_sent_pairs(c, c, writer)
                         count += 1
                         if count > 6000:
                             exit(1)
