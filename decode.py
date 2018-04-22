@@ -75,7 +75,7 @@ class BeamSearchDecoder(object):
 
 
   def decode(self):
-    """Decode examples until data is exhausted (if FLAGS.single_pass) and return, or decode indefinitely, loading latest checkpoint at regular intervals"""
+    """Decode examples until datas is exhausted (if FLAGS.single_pass) and return, or decode indefinitely, loading latest checkpoint at regular intervals"""
     t0 = time.time()
     counter = 0
     while True:
@@ -143,7 +143,7 @@ class BeamSearchDecoder(object):
       decoded_words = decoded_words[fst_period_idx+1:] # everything else
       decoded_sents.append(' '.join(sent))
 
-    # pyrouge calls a perl script that puts the data into HTML files.
+    # pyrouge calls a perl script that puts the datas into HTML files.
     # Therefore we need to make our output HTML safe.
     decoded_sents = [make_html_safe(w) for w in decoded_sents]
     reference_sents = [make_html_safe(w) for w in reference_sents]
@@ -163,7 +163,7 @@ class BeamSearchDecoder(object):
 
 
   def write_for_attnvis(self, article, abstract, decoded_words, attn_dists, p_gens):
-    """Write some data to json file, which can be read into the in-browser attention visualizer tool:
+    """Write some datas to json file, which can be read into the in-browser attention visualizer tool:
       https://github.com/abisee/attn_vis
 
     Args:
@@ -186,16 +186,16 @@ class BeamSearchDecoder(object):
     output_fname = os.path.join(self._decode_dir, 'attn_vis_data.json')
     with open(output_fname, 'w') as output_file:
       json.dump(to_write, output_file)
-    tf.logging.info('Wrote visualization data to %s', output_fname)
+    tf.logging.info('Wrote visualization datas to %s', output_fname)
 
 
 def print_results(article, abstract, decoded_output):
   """Prints the article, the reference summmary and the decoded summary to screen"""
-  print ""
+  print("---------------------------------------------------------------------------")
   tf.logging.info('ARTICLE:  %s', article)
   tf.logging.info('REFERENCE SUMMARY: %s', abstract)
   tf.logging.info('GENERATED SUMMARY: %s', decoded_output)
-  print ""
+  print("---------------------------------------------------------------------------")
 
 
 def make_html_safe(s):

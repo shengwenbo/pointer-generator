@@ -31,7 +31,7 @@ from tensorflow.python import debug as tf_debug
 
 FLAGS = tf.app.flags.FLAGS
 
-# Where to find data
+# Where to find datas
 tf.app.flags.DEFINE_string('data_path', '', 'Path expression to tf.Example datafiles. Can include wildcards to access multiple datafiles.')
 tf.app.flags.DEFINE_string('vocab_path', '', 'Path expression to text vocabulary file.')
 
@@ -107,22 +107,22 @@ def restore_best_model():
 
   # Initialize all vars in the model
   sess = tf.Session(config=util.get_config())
-  print "Initializing all variables..."
+  print("Initializing all variables...")
   sess.run(tf.initialize_all_variables())
 
   # Restore the best model from eval dir
   saver = tf.train.Saver([v for v in tf.all_variables() if "Adagrad" not in v.name])
-  print "Restoring all non-adagrad variables from best model in eval dir..."
+  print("Restoring all non-adagrad variables from best model in eval dir...")
   curr_ckpt = util.load_ckpt(saver, sess, "eval")
-  print "Restored %s." % curr_ckpt
+  print ("Restored %s." % curr_ckpt)
 
   # Save this model to train dir and quit
   new_model_name = curr_ckpt.split("/")[-1].replace("bestmodel", "model")
   new_fname = os.path.join(FLAGS.log_root, "train", new_model_name)
-  print "Saving model to %s..." % (new_fname)
+  print ("Saving model to %s..." % (new_fname))
   new_saver = tf.train.Saver() # this saver saves all variables that now exist, including Adagrad variables
   new_saver.save(sess, new_fname)
-  print "Saved."
+  print ("Saved.")
   exit()
 
 
@@ -132,21 +132,21 @@ def convert_to_coverage_model():
 
   # initialize an entire coverage model from scratch
   sess = tf.Session(config=util.get_config())
-  print "initializing everything..."
+  print("initializing everything...")
   sess.run(tf.global_variables_initializer())
 
   # load all non-coverage weights from checkpoint
   saver = tf.train.Saver([v for v in tf.global_variables() if "coverage" not in v.name and "Adagrad" not in v.name])
-  print "restoring non-coverage variables..."
+  print("restoring non-coverage variables...")
   curr_ckpt = util.load_ckpt(saver, sess)
-  print "restored."
+  print("restored.")
 
   # save this model and quit
   new_fname = curr_ckpt + '_cov_init'
-  print "saving model to %s..." % (new_fname)
+  print("saving model to %s..." % (new_fname))
   new_saver = tf.train.Saver() # this one will save all variables that now exist
   new_saver.save(sess, new_fname)
-  print "saved."
+  print("saved.")
   exit()
 
 
@@ -221,7 +221,7 @@ def run_eval(model, batcher, vocab):
   model.build_graph() # build the graph
   saver = tf.train.Saver(max_to_keep=3) # we will keep 3 best checkpoints at a time
   sess = tf.Session(config=util.get_config())
-  eval_dir = os.path.join(FLAGS.log_root, "eval") # make a subdir of the root dir for eval data
+  eval_dir = os.path.join(FLAGS.log_root, "eval") # make a subdir of the root dir for eval datas
   bestmodel_save_path = os.path.join(eval_dir, 'bestmodel') # this is where checkpoints of best models are saved
   summary_writer = tf.summary.FileWriter(eval_dir)
   running_avg_loss = 0 # the eval job keeps a smoother, running average loss to tell it when to implement early stopping
@@ -294,24 +294,24 @@ def main(unused_argv):
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
   hparam_list = ['mode', 'lr', 'adagrad_init_acc', 'rand_unif_init_mag', 'trunc_norm_init_std', 'max_grad_norm', 'hidden_dim', 'emb_dim', 'batch_size', 'max_dec_steps', 'max_enc_steps', 'coverage', 'cov_loss_wt', 'pointer_gen']
   hps_dict = {}
-  for key,val in FLAGS.__flags.iteritems(): # for each flag
+  for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list
       hps_dict[key] = val # add it to the dict
   hps = namedtuple("HParams", hps_dict.keys())(**hps_dict)
 
-  # Create a batcher object that will create minibatches of data
+  # Create a batcher object that will create minibatches of datas
   batcher = Batcher(FLAGS.data_path, vocab, hps, single_pass=FLAGS.single_pass)
 
   tf.set_random_seed(111) # a seed value for randomness
 
-  if hps.mode == 'train':
-    print "creating model..."
+  if hps.mode._value == 'train':
+    print("creating model...")
     model = SummarizationModel(hps, vocab)
     setup_training(model, batcher)
-  elif hps.mode == 'eval':
+  elif hps.mode._value == 'eval':
     model = SummarizationModel(hps, vocab)
     run_eval(model, batcher, vocab)
-  elif hps.mode == 'decode':
+  elif hps.mode._value == 'decode':
     decode_model_hps = hps  # This will be the hyperparameters for the decoder model
     decode_model_hps = hps._replace(max_dec_steps=1) # The model is configured with max_dec_steps=1 because we only ever run one step of the decoder at a time (to do beam search). Note that the batcher is initialized with max_dec_steps equal to e.g. 100 because the batches need to contain the full summaries
     model = SummarizationModel(decode_model_hps, vocab)
