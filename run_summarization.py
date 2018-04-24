@@ -45,11 +45,11 @@ tf.app.flags.DEFINE_string('log_root', '', 'Root directory for all logging.')
 tf.app.flags.DEFINE_string('exp_name', '', 'Name for experiment. Logs will be saved in a directory with this name, under log_root.')
 
 # Hyperparameters
-tf.app.flags.DEFINE_integer('hidden_dim', 256, 'dimension of RNN hidden states')
-tf.app.flags.DEFINE_integer('emb_dim', 128, 'dimension of word embeddings')
-tf.app.flags.DEFINE_integer('batch_size', 64, 'minibatch size')
-tf.app.flags.DEFINE_integer('max_enc_steps', 400, 'max timesteps of encoder (max source text tokens)')
-tf.app.flags.DEFINE_integer('max_dec_steps', 100, 'max timesteps of decoder (max summary tokens)')
+tf.app.flags.DEFINE_integer('hidden_dim', 32, 'dimension of RNN hidden states')
+tf.app.flags.DEFINE_integer('emb_dim', 16, 'dimension of word embeddings')
+tf.app.flags.DEFINE_integer('batch_size', 16, 'minibatch size')
+tf.app.flags.DEFINE_integer('max_enc_steps', 200, 'max timesteps of encoder (max source text tokens)')
+tf.app.flags.DEFINE_integer('max_dec_steps', 20, 'max timesteps of decoder (max summary tokens)')
 tf.app.flags.DEFINE_integer('beam_size', 4, 'beam size for beam search decoding.')
 tf.app.flags.DEFINE_integer('min_dec_steps', 35, 'Minimum sequence length of generated summary. Applies only for beam search decoding mode')
 tf.app.flags.DEFINE_integer('vocab_size', 50000, 'Size of vocabulary. These will be read from the vocabulary file in order. If the vocabulary file contains fewer words than this number, or if this number is set to 0, will take all words in the vocabulary file.')
@@ -58,6 +58,10 @@ tf.app.flags.DEFINE_float('adagrad_init_acc', 0.1, 'initial accumulator value fo
 tf.app.flags.DEFINE_float('rand_unif_init_mag', 0.02, 'magnitude for lstm cells random uniform inititalization')
 tf.app.flags.DEFINE_float('trunc_norm_init_std', 1e-4, 'std of trunc norm init, used for initializing everything else')
 tf.app.flags.DEFINE_float('max_grad_norm', 2.0, 'for gradient clipping')
+tf.app.flags.DEFINE_integer('max_round', 5, 'max training round, -1 for infinity')
+tf.app.flags.DEFINE_float('dropout_keep_prob', 0.8, 'dropout keep probability')
+tf.app.flags.DEFINE_integer('encoder_layers',3,'encoder layers count')
+tf.app.flags.DEFINE_integer('decoder_layers', 3, 'decoder layers count')
 
 # Pointer-generator or baseline model
 tf.app.flags.DEFINE_boolean('pointer_gen', True, 'If True, use pointer-generator model. If False, use baseline model.')
@@ -190,20 +194,21 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
       sess = tf_debug.LocalCLIDebugWrapperSession(sess)
       sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
     total_count = 0
+    begin_t = t0 = time.time()
+    round = 1
     while True: # repeats until interrupted
       batch = batcher.next_batch()
 
-      total_count += 1
-      tf.logging.info('total query count: %d = %d*%d', total_count, TRAIN_SIZE, total_count // TRAIN_SIZE )
+      total_count += FLAGS.batch_size
+      if total_count > TRAIN_SIZE:
+        total_count = 0
+        t0 = time.time()
+        round += 1
 
-      tf.logging.info('running training step...')
-      t0=time.time()
       results = model.run_train_step(sess, batch)
       t1=time.time()
-      tf.logging.info('seconds for training step: %.3f', t1-t0)
 
       loss = results['loss']
-      tf.logging.info('loss: %f', loss) # print the loss to screen
 
       if not np.isfinite(loss):
         raise Exception("Loss is not finite. Stopping.")
@@ -218,6 +223,13 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
 
       summary_writer.add_summary(summaries, train_step) # write the summaries
       if train_step % 100 == 0: # flush the summary writer every so often
+        total_time = int(t1 - t0)
+        tf.logging.info('total time: %s', util.second2time(t1-begin_t))
+        tf.logging.info('round: %d', round)
+        tf.logging.info('round query: %d', total_count)
+        tf.logging.info('round time: %s/%s', util.second2time(total_time), util.second2time(total_time*TRAIN_SIZE//total_count))
+        tf.logging.info('loss: %f', loss)  # print the loss to screen
+        tf.logging.info("")
         summary_writer.flush()
 
 
@@ -297,7 +309,7 @@ def main(unused_argv):
     raise Exception("The single_pass flag should only be True in decode mode")
 
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
-  hparam_list = ['mode', 'lr', 'adagrad_init_acc', 'rand_unif_init_mag', 'trunc_norm_init_std', 'max_grad_norm', 'hidden_dim', 'emb_dim', 'batch_size', 'max_dec_steps', 'max_enc_steps', 'coverage', 'cov_loss_wt', 'pointer_gen']
+  hparam_list = ['mode', 'lr', 'adagrad_init_acc', 'rand_unif_init_mag', 'trunc_norm_init_std', 'max_grad_norm', 'hidden_dim', 'emb_dim', 'batch_size', 'max_dec_steps', 'max_enc_steps', 'coverage', 'cov_loss_wt', 'pointer_gen', 'dropout_keep_prob','encoder_layers','decoder_layers']
   hps_dict = {}
   for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list

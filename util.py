@@ -41,3 +41,11 @@ def load_ckpt(saver, sess, ckpt_dir="train"):
     except:
       tf.logging.info("Failed to load checkpoint from %s. Sleeping for %i secs...", ckpt_dir, 10)
       time.sleep(10)
+
+def second2time(iItv):
+    h=iItv//3600
+    sUp_h=iItv-3600*h
+    m=sUp_h//60
+    sUp_m=sUp_h-60*m
+    s=sUp_m
+    return ":".join(map(str,(h,m,s)))
