@@ -19,7 +19,7 @@ TRAIN_SIZE = 500000
 VAL_SIZE = 10000
 TEST_SIZE = 1000
 
-VOCAB_SIZE = 100000
+VOCAB_SIZE = 30000
 
 def cut(path):
     with open(path, encoding="utf-8") as fin, open(path+".seg","w",encoding="utf-8") as fout:
@@ -30,12 +30,13 @@ def cut(path):
                 for token in seg.cut(sub_line):
                     word = token.word
                     tag = token.flag
-                    if len(word) == 1:
-                        segs.append("%s/%s_S" % (word, tag))
-                    else:
-                        segs.append("%s/%s_B" % (word[0], tag))
-                        [segs.append("%s/%s_M" % (c, tag)) for c in word[1:len(word)-1]]
-                        segs.append("%s/%s_E" % (word[-1], tag))
+                    segs.append("%s_%s" % (word, tag))
+                    # if len(word) == 1:
+                    #     segs.append("%s/%s_S" % (word, tag))
+                    # else:
+                    #     segs.append("%s/%s_B" % (word[0], tag))
+                    #     [segs.append("%s/%s_M" % (c, tag)) for c in word[1:len(word)-1]]
+                    #     segs.append("%s/%s_E" % (word[-1], tag))
                 segs.append("\t")
             segs.append("\n")
             out_lines.append(" ".join(segs))
@@ -75,15 +76,15 @@ def write_to_bin(input_file, out_file, makevocab=False, segment=False, repeat=1)
                             c = " ".join(list(c))
                         write_sent_pairs(origin, c, writer)
                         # write_sent_pairs(c, c, writer)
-                else:
-                    write_sent_pairs(origin, origin, writer)
+                # else:
+                #     write_sent_pairs(origin, origin, writer)
 
                 # Write the vocab to file, if applicable
                 if makevocab:
                     art_tokens = origin.split(' ')
                     tokens = art_tokens
                     tokens = [t.strip() for t in tokens]  # strip
-                    tokens = [t for t in tokens if t != ""]  # remove empty
+                    tokens = [t for t in tokens if t != "" and not t.endswith("_x")]  # remove empty
                     vocab_counter.update(tokens)
 
     print("Finished writing file %s\n" % out_file)
@@ -131,7 +132,7 @@ def make_vocab(vocab_file):
         for line in fin.readlines():
             tokens = line.strip().split(" ")
             tokens = [t.strip() for t in tokens]  # strip
-            tokens = [t for t in tokens if t != ""]  # remove empty
+            tokens = [t for t in tokens if t != "" and not t.endswith("_x")]  # remove empty
             vocab_counter.update(tokens)
 
     print("Writing vocab file...")
@@ -146,11 +147,11 @@ if __name__ == '__main__':
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
 
     # cut("./datas/origin/data.train")
-    split_train_data(origin_data)
-    # make_vocab("./datas/origin/data.train.seg")
+    make_vocab("./datas/origin/data.train.seg")
+    # split_train_data(origin_data)
 
     # Read the text file, do a little postprocessing then write to bin files
     segment = True
-    write_to_bin(test_file, os.path.join(finished_files_dir, "test.bin"), segment=segment, repeat=10)
-    write_to_bin(val_file, os.path.join(finished_files_dir, "val.bin"), segment=segment, repeat=10)
-    write_to_bin(train_file, os.path.join(finished_files_dir, "train.bin"), segment=segment, repeat=10)
+    # write_to_bin(test_file, os.path.join(finished_files_dir, "test.bin"), segment=segment, repeat=1)
+    # write_to_bin(val_file, os.path.join(finished_files_dir, "val.bin"), segment=segment, repeat=1)
+    # write_to_bin(train_file, os.path.join(finished_files_dir, "train.bin"), segment=segment, repeat=1)

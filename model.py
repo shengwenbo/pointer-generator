@@ -89,8 +89,13 @@ class SummarizationModel(object):
     with tf.variable_scope('encoder'):
       cell_fw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
       cell_bw = tf.contrib.rnn.LSTMCell(self._hps.hidden_dim, initializer=self.rand_unif_init, state_is_tuple=True)
-      (encoder_outputs, (fw_st, bw_st)) = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, encoder_inputs, dtype=tf.float32, sequence_length=seq_len, swap_memory=True)
-      encoder_outputs = tf.concat(axis=2, values=encoder_outputs) # concatenate the forwards and backwards states
+      if self._hps.mode == "train":
+        cell_fw = tf.nn.rnn_cell.DropoutWrapper(cell_fw,self._hps.dropout_keep_prob)
+        cell_bw = tf.nn.rnn_cell.DropoutWrapper(cell_bw, self._hps.dropout_keep_prob)
+      if self._hps.encoder_layers > 1:
+        for _ in range(self._hps.encoder_layers):
+          (encoder_outputs, (fw_st, bw_st)) = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, encoder_inputs, dtype=tf.float32, sequence_length=seq_len, swap_memory=True)
+          encoder_outputs = tf.concat(axis=2, values=encoder_outputs) # concatenate the forwards and backwards states
     return encoder_outputs, fw_st, bw_st
 
 
@@ -118,7 +123,10 @@ class SummarizationModel(object):
       old_h = tf.concat(axis=1, values=[fw_st.h, bw_st.h]) # Concatenation of fw and bw state
       new_c = tf.nn.relu(tf.matmul(old_c, w_reduce_c) + bias_reduce_c) # Get new cell from old cell
       new_h = tf.nn.relu(tf.matmul(old_h, w_reduce_h) + bias_reduce_h) # Get new state from old state
-      return tf.contrib.rnn.LSTMStateTuple(new_c, new_h) # Return new cell and state
+      if self._hps.decoder_layers > 1:
+        return tuple([tf.contrib.rnn.LSTMStateTuple(new_c, new_h)]*self._hps.decoder_layers) # Return new cell and state
+      else:
+        return tf.contrib.rnn.LSTMStateTuple(new_c, new_h) # Return new cell and state
 
 
   def _add_decoder(self, inputs):
@@ -136,6 +144,11 @@ class SummarizationModel(object):
     """
     hps = self._hps
     cell = tf.contrib.rnn.LSTMCell(hps.hidden_dim, state_is_tuple=True, initializer=self.rand_unif_init)
+
+    if self._hps.mode == "train":
+      cell = tf.nn.rnn_cell.DropoutWrapper(cell, self._hps.dropout_keep_prob)
+    if self._hps.decoder_layers > 1:
+      cell = tf.nn.rnn_cell.MultiRNNCell([cell] * self._hps.decoder_layers, state_is_tuple=True)
 
     prev_coverage = self.prev_coverage if hps.mode=="decode" and hps.coverage else None # In decode mode, we run attention_decoder one step at a time and so need to pass in the previous step's coverage vector each time
 
@@ -223,6 +236,7 @@ class SummarizationModel(object):
       # Add the decoder.
       with tf.variable_scope('decoder'):
         decoder_outputs, self._dec_out_state, self.attn_dists, self.p_gens, self.coverage = self._add_decoder(emb_dec_inputs)
+        # self._copy_tags = tf.get_variable('copy_tags', [self._hps.max_dec_steps], dtype=tf.int32, initializer=tf.ones_initializer())
 
       # Add the output projection to obtain the vocabulary distribution
       with tf.variable_scope('output_projection'):
@@ -356,13 +370,12 @@ class SummarizationModel(object):
       dec_in_state: A LSTMStateTuple of shape ([1,hidden_dim],[1,hidden_dim])
     """
     feed_dict = self._make_feed_dict(batch, just_enc=True) # feed the batch into the placeholders
-    (enc_states, dec_in_state, global_step) = sess.run([self._enc_states, self._dec_in_state, self.global_step], feed_dict) # run the encoder
+    (enc_states, dec_in_states, global_step) = sess.run([self._enc_states, self._dec_in_state, self.global_step], feed_dict) # run the encoder
 
     # dec_in_state is LSTMStateTuple shape ([batch_size,hidden_dim],[batch_size,hidden_dim])
     # Given that the batch is a single example repeated, dec_in_state is identical across the batch so we just take the top row.
-    dec_in_state = tf.contrib.rnn.LSTMStateTuple(dec_in_state.c[0], dec_in_state.h[0])
-    return enc_states, dec_in_state
-
+    dec_in_states = tf.contrib.rnn.LSTMStateTuple(dec_in_states.c[0], dec_in_states.h[0])
+    return enc_states, dec_in_states
 
   def decode_onestep(self, sess, batch, latest_tokens, enc_states, dec_init_states, prev_coverage):
     """For beam search decoding. Run the decoder for one step.
@@ -388,9 +401,10 @@ class SummarizationModel(object):
     beam_size = len(dec_init_states)
 
     # Turn dec_init_states (a list of LSTMStateTuples) into a single LSTMStateTuple for the batch
+
     cells = [np.expand_dims(state.c, axis=0) for state in dec_init_states]
     hiddens = [np.expand_dims(state.h, axis=0) for state in dec_init_states]
-    new_c = np.concatenate(cells, axis=0)  # shape [batch_size,hidden_dim]
+    new_c =  np.concatenate(cells, axis=0)   # shape [batch_size,hidden_dim]
     new_h = np.concatenate(hiddens, axis=0)  # shape [batch_size,hidden_dim]
     new_dec_in_state = tf.contrib.rnn.LSTMStateTuple(new_c, new_h)
 
