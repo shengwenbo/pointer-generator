@@ -59,15 +59,15 @@ tf.app.flags.DEFINE_float('rand_unif_init_mag', 0.02, 'magnitude for lstm cells 
 tf.app.flags.DEFINE_float('trunc_norm_init_std', 1e-4, 'std of trunc norm init, used for initializing everything else')
 tf.app.flags.DEFINE_float('max_grad_norm', 2.0, 'for gradient clipping')
 tf.app.flags.DEFINE_integer('max_round', 5, 'max training round, -1 for infinity')
-tf.app.flags.DEFINE_float('dropout_keep_prob', 0.7, 'dropout keep probability')
-tf.app.flags.DEFINE_integer('encoder_layers',4,'encoder layers count')
+tf.app.flags.DEFINE_float('dropout_keep_prob', 1, 'dropout keep probability')
+tf.app.flags.DEFINE_integer('encoder_layers',1,'encoder layers count')
 tf.app.flags.DEFINE_integer('decoder_layers', 1, 'decoder layers count')
 
 # Pointer-generator or baseline model
 tf.app.flags.DEFINE_boolean('pointer_gen', True, 'If True, use pointer-generator model. If False, use baseline model.')
 
 # Coverage hyperparameters
-tf.app.flags.DEFINE_boolean('coverage', False, 'Use coverage mechanism. Note, the experiments reported in the ACL paper train WITHOUT coverage until converged, and then train for a short phase WITH coverage afterwards. i.e. to reproduce the results in the ACL paper, turn this off for most of training then turn on for a short phase at the end.')
+tf.app.flags.DEFINE_boolean('coverage', True, 'Use coverage mechanism. Note, the experiments reported in the ACL paper train WITHOUT coverage until converged, and then train for a short phase WITH coverage afterwards. i.e. to reproduce the results in the ACL paper, turn this off for most of training then turn on for a short phase at the end.')
 tf.app.flags.DEFINE_float('cov_loss_wt', 1.0, 'Weight of coverage loss (lambda in the paper). If zero, then no incentive to minimize coverage loss.')
 
 # Utility flags, for restoring and changing checkpoints
@@ -215,7 +215,7 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
 
       if FLAGS.coverage:
         coverage_loss = results['coverage_loss']
-        tf.logging.info("coverage_loss: %f", coverage_loss) # print the coverage loss to screen
+        # tf.logging.info("coverage_loss: %f", coverage_loss) # print the coverage loss to screen
 
       # get the summaries and iteration number so we can write summaries to tensorboard
       summaries = results['summaries'] # we will write these summaries to tensorboard using summary_writer
@@ -229,6 +229,9 @@ def run_training(model, batcher, sess_context_manager, sv, summary_writer):
         tf.logging.info('round query: %d', total_count)
         tf.logging.info('round time: %s/%s', util.second2time(total_time), util.second2time(total_time*TRAIN_SIZE//total_count))
         tf.logging.info('loss: %f', loss)  # print the loss to screen
+        if FLAGS.coverage:
+          coverage_loss = results['coverage_loss']
+          tf.logging.info("coverage_loss: %f", coverage_loss) # print the coverage loss to screen
         tf.logging.info("")
         summary_writer.flush()
 
@@ -309,7 +312,7 @@ def main(unused_argv):
     raise Exception("The single_pass flag should only be True in decode mode")
 
   # Make a namedtuple hps, containing the values of the hyperparameters that the model needs
-  hparam_list = ['mode', 'lr', 'adagrad_init_acc', 'rand_unif_init_mag', 'trunc_norm_init_std', 'max_grad_norm', 'hidden_dim', 'emb_dim', 'batch_size', 'max_dec_steps', 'max_enc_steps', 'coverage', 'cov_loss_wt', 'pointer_gen', 'dropout_keep_prob','encoder_layers','decoder_layers']
+  hparam_list = ['mode', 'lr', 'adagrad_init_acc', 'rand_unif_init_mag', 'trunc_norm_init_std', 'max_grad_norm', 'hidden_dim', 'emb_dim', 'batch_size', 'max_dec_steps', 'max_enc_steps', 'coverage', 'cov_loss_wt', 'pointer_gen', 'dropout_keep_prob','encoder_layers','decoder_layers','vocab_size']
   hps_dict = {}
   for key,val in FLAGS.__flags.items(): # for each flag
     if key in hparam_list: # if it's in the list
