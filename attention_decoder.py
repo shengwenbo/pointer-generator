@@ -151,8 +151,6 @@ def attention_decoder(decoder_inputs, initial_state, encoder_states, enc_padding
 
       # Run the decoder RNN cell. cell_output = decoder state
       cell_output, state = cell(x, state)
-      # if isinstance(state, (list, tuple)):
-      #   state = state[-1]
 
       # Run the attention mechanism.
       if i == 0 and initial_state_attention:  # always true in decode mode

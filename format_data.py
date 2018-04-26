@@ -4,6 +4,7 @@ import struct
 import collections
 import jieba.posseg as seg
 from tensorflow.core.example import example_pb2
+from data import SENTENCE_START,SENTENCE_END
 
 # We use these to separate the summary sentences in the .bin datafiles
 SENTENCE_START = '<s>'
@@ -100,6 +101,7 @@ def write_to_bin(input_file, out_file, makevocab=False, segment=False, repeat=1)
 
 def write_sent_pairs(article, abstract, writer):
     # Write to tf.Example
+    abstract = '%s %s %s' % (SENTENCE_START, abstract, SENTENCE_END)
     tf_example = example_pb2.Example()
     tf_example.features.feature['article'].bytes_list.value.extend([article.encode("utf-8")])
     tf_example.features.feature['abstract'].bytes_list.value.extend([abstract.encode("utf-8")])
@@ -147,11 +149,11 @@ if __name__ == '__main__':
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
 
     # cut("./datas/origin/data.train")
-    make_vocab("./datas/origin/data.train.seg")
-    # split_train_data(origin_data)
+    # make_vocab("./datas/origin/data.train.seg")
+    split_train_data(origin_data)
 
     # Read the text file, do a little postprocessing then write to bin files
     segment = True
-    # write_to_bin(test_file, os.path.join(finished_files_dir, "test.bin"), segment=segment, repeat=1)
-    # write_to_bin(val_file, os.path.join(finished_files_dir, "val.bin"), segment=segment, repeat=1)
-    # write_to_bin(train_file, os.path.join(finished_files_dir, "train.bin"), segment=segment, repeat=1)
+    write_to_bin(test_file, os.path.join(finished_files_dir, "test.bin"), segment=segment, repeat=1)
+    write_to_bin(val_file, os.path.join(finished_files_dir, "val.bin"), segment=segment, repeat=1)
+    write_to_bin(train_file, os.path.join(finished_files_dir, "train.bin"), segment=segment, repeat=1)

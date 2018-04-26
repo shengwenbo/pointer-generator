@@ -1,14 +1,26 @@
-*Note: this code is no longer actively maintained. However, feel free to use the Issues section to discuss the code with other users. Some users have updated this code for newer versions of Tensorflow and Python - see information below and Issues section.*
+This repository contains code for the ACL 2017 paper *[Get To The Point: Summarization with Pointer-Generator Networks](https://arxiv.org/abs/1704.04368)*. 
 
----
+It is a version upgraded to run on TF 1.5 and to correct some bug when testing with new dataset. TF1.5' support on tf.tags has changed between TF1.2 and 1.5 so I changed the
+code a bit to match new requirements
 
-This repository contains code for the ACL 2017 paper *[Get To The Point: Summarization with Pointer-Generator Networks](https://arxiv.org/abs/1704.04368)*. For an intuitive overview of the paper, read the [blog post](http://www.abigailsee.com/2017/04/16/taming-rnns-for-better-summarization.html).
+Bugs on new data: 
+I worked on a new dataset and had some issues with encoding so I forced utf8 encoding in this version, feel free to correct it if you don't need it
+
+Bug on vocab_meta.tsv: 
+I had trouble when loading the pre trained model, it appears that the vocab files had 4 words that didn't pass the tes when processing in the data.py,
+I changed a bit the code to format thoses words (it was numbers that were considered as lists because they were a space in their writting, ex: 180 500, 
+so I just concatenate them before processing to keep thoses words and deal with the shape problem.
+
+
+
 
 ## Looking for test set output?
 The test set output of the models described in the paper can be found [here](https://drive.google.com/file/d/0B7pQmm-OfDv7MEtMVU5sOHc5LTg/view?usp=sharing).
 
 ## Looking for pretrained model?
 A pretrained model is available here:
+
+\\ Look at the initial repo to use the TF 1.0 version, as this fork aims to upgrade the code to run on TF 1.5  and Python 3 //
 * [Version for Tensorflow 1.0](https://drive.google.com/file/d/0B7pQmm-OfDv7SHFadHR4RllfR1E/view?usp=sharing)
 * [Version for Tensorflow 1.2.1](https://drive.google.com/file/d/0B7pQmm-OfDv7ZUhHZm9ZWEZidDg/view?usp=sharing)
 
@@ -23,8 +35,6 @@ This code is based on the [TextSum code](https://github.com/tensorflow/models/tr
 This code was developed for Tensorflow 0.12, but has been updated to run with Tensorflow 1.0.
 In particular, the code in attention_decoder.py is based on [tf.contrib.legacy_seq2seq_attention_decoder](https://www.tensorflow.org/api_docs/python/tf/contrib/legacy_seq2seq/attention_decoder), which is now outdated.
 Tensorflow 1.0's [new seq2seq library](https://www.tensorflow.org/api_guides/python/contrib.seq2seq#Attention) probably provides a way to do this (as well as beam search) more elegantly and efficiently in the future.
-
-**Python 3 version**: This code is in Python 2. If you want a Python 3 version, see [@becxer's fork](https://github.com/becxer/pointer-generator/).
 
 ## How to run
 

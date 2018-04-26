@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""This file contains code to process datas into batches"""
+"""This file contains code to process data into batches"""
 
 import queue as Queue
 from random import shuffle
@@ -215,12 +215,12 @@ class Batch(object):
 
 
 class Batcher(object):
-  """A class to generate minibatches of datas. Buckets examples together based on length of the encoder sequence."""
+  """A class to generate minibatches of data. Buckets examples together based on length of the encoder sequence."""
 
   BATCH_QUEUE_MAX = 100 # max number of batches the batch_queue can hold
 
   def __init__(self, data_path, vocab, hps, single_pass):
-    """Initialize the batcher. Start threads that process the datas into batches.
+    """Initialize the batcher. Start threads that process the data into batches.
 
     Args:
       data_path: tf.Example filepattern.
@@ -235,6 +235,7 @@ class Batcher(object):
 
     # Initialize a queue of Batches waiting to be used, and a queue of Examples waiting to be batched
     self._batch_queue = Queue.Queue(self.BATCH_QUEUE_MAX)
+    print("Type de BATCH_QUEUE_MAX -> ",type(self.BATCH_QUEUE_MAX))
     self._example_queue = Queue.Queue(self.BATCH_QUEUE_MAX * self._hps.batch_size)
 
     # Different settings depending on whether we're in single_pass mode or not
@@ -286,7 +287,7 @@ class Batcher(object):
     return batch
 
   def fill_example_queue(self):
-    """Reads datas from file and processes into Examples which are then placed into the example queue."""
+    """Reads data from file and processes into Examples which are then placed into the example queue."""
 
     input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
 
@@ -294,13 +295,13 @@ class Batcher(object):
       try:
         (article, abstract) = next(input_gen) # read the next example from file. article and abstract are both strings.
       except StopIteration: # if there are no more examples:
-        tf.logging.info("The example generator for this example queue filling thread has exhausted datas.")
+        tf.logging.info("The example generator for this example queue filling thread has exhausted data.")
         if self._single_pass:
           tf.logging.info("single_pass mode is on, so we've finished reading dataset. This thread is stopping.")
           self._finished_reading = True
           break
         else:
-          raise Exception("single_pass mode is off but the example generator is out of datas; error.")
+          raise Exception("single_pass mode is off but the example generator is out of data; error.")
 
       abstract_sentences = [sent.strip() for sent in data.abstract2sents(abstract)] # Use the <s> and </s> tags in abstract to get a list of sentences.
       example = Example(article, abstract_sentences, self._vocab, self._hps) # Process into an Example.
@@ -359,12 +360,12 @@ class Batcher(object):
     """Generates article and abstract text from tf.Example.
 
     Args:
-      example_generator: a generator of tf.Examples from file. See datas.example_generator"""
+      example_generator: a generator of tf.Examples from file. See data.example_generator"""
     while True:
       e = next(example_generator) # e is a tf.Example
       try:
-        article_text = e.features.feature['article'].bytes_list.value[0].decode() # the article text was saved under the key 'article' in the datas files
-        abstract_text = e.features.feature['abstract'].bytes_list.value[0].decode() # the abstract text was saved under the key 'abstract' in the datas files
+        article_text = e.features.feature['article'].bytes_list.value[0].decode() # the article text was saved under the key 'article' in the data files
+        abstract_text = e.features.feature['abstract'].bytes_list.value[0].decode() # the abstract text was saved under the key 'abstract' in the data files
       except ValueError:
         tf.logging.error('Failed to get article or abstract from example')
         continue

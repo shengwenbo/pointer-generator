@@ -24,7 +24,6 @@ FLAGS = tf.app.flags.FLAGS
 def get_config():
   """Returns config for tf.session"""
   config = tf.ConfigProto(allow_soft_placement=True)
-  # config.gpu_options.per_process_gpu_memory_fraction = 0.1
   config.gpu_options.allow_growth=True
   return config
 
@@ -38,15 +37,8 @@ def load_ckpt(saver, sess, ckpt_dir="train"):
       tf.logging.info('Loading checkpoint %s', ckpt_state.model_checkpoint_path)
       saver.restore(sess, ckpt_state.model_checkpoint_path)
       return ckpt_state.model_checkpoint_path
-    except BaseException as e:
-      print(e)
+    except Exception as e:
+      print('The error is -->',e)
       tf.logging.info("Failed to load checkpoint from %s. Sleeping for %i secs...", ckpt_dir, 10)
       time.sleep(10)
-
-def second2time(iItv):
-    h=iItv//3600
-    sUp_h=iItv-3600*h
-    m=sUp_h//60
-    sUp_m=sUp_h-60*m
-    s=sUp_m
-    return ":".join(map(str,(h,m,s)))
+      break

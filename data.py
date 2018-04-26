@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""This file contains code to read the train/eval/test datas from file and process it, and read the vocab datas from file and process it"""
+"""This file contains code to read the train/eval/test data from file and process it, and read the vocab data from file and process it"""
 
 import glob
 import random
@@ -22,7 +22,7 @@ import struct
 import csv
 from tensorflow.core.example import example_pb2
 
-# <s> and </s> are used in the datas files to segment the abstracts into sentences. They don't receive vocab ids.
+# <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
 SENTENCE_END = '</s>'
 
@@ -54,13 +54,16 @@ class Vocab(object):
       self._count += 1
 
     # Read the vocab file and add words up to max_size
-    with open(vocab_file, 'r', encoding="utf-8") as vocab_f:
+    with open(vocab_file, 'r', encoding='utf8') as vocab_f: #New : add the utf8 encoding to prevent error
       for line in vocab_f:
         pieces = line.split()
-        if len(pieces) != 2:
+        if len(pieces) != 2: #New : before it was 2, don't know why
+
           print('Warning: incorrectly formatted line in vocabulary file: %s\n' % line)
-          continue
-        w = pieces[0]
+          w = ' '.join(pieces) #New // bad formated words are numbers that were taken as list when splitted
+          #continue New // I wan to add this word to the vocab too
+        else: #New
+          w = pieces[0]
         if w in [SENTENCE_START, SENTENCE_END, UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]:
           raise Exception('<s>, </s>, [UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
         if w in self._word_to_id:
@@ -71,7 +74,6 @@ class Vocab(object):
         if max_size != 0 and self._count >= max_size:
           print("max_size of vocab was specified as %i; we now have %i words. Stopping reading." % (max_size, self._count))
           break
-
     print("Finished constructing vocabulary of %i total words. Last word added: %s" % (self._count, self._id_to_word[self._count-1]))
 
   def word2id(self, word):
@@ -98,7 +100,7 @@ class Vocab(object):
       fpath: place to write the metadata file
     """
     print("Writing word embedding metadata file to %s..." % (fpath))
-    with open(fpath, "w", encoding="utf-8") as f:
+    with open(fpath, "w") as f:
       fieldnames = ['word']
       writer = csv.DictWriter(f, delimiter="\t", fieldnames=fieldnames)
       for i in range(self.size()):
@@ -106,15 +108,15 @@ class Vocab(object):
 
 
 def example_generator(data_path, single_pass):
-  """Generates tf.Examples from datas files.
+  """Generates tf.Examples from data files.
 
-    Binary datas format: <length><blob>. <length> represents the byte size
+    Binary data format: <length><blob>. <length> represents the byte size
     of <blob>. <blob> is serialized tf.Example proto. The tf.Example contains
     the tokenized article text and summary.
 
   Args:
     data_path:
-      Path to tf.Example datas files. Can include wildcards, e.g. if you have several training datas chunk files train_001.bin, train_002.bin, etc, then pass data_path=train_* to access them all.
+      Path to tf.Example data files. Can include wildcards, e.g. if you have several training data chunk files train_001.bin, train_002.bin, etc, then pass data_path=train_* to access them all.
     single_pass:
       Boolean. If True, go through the dataset exactly once, generating examples in the order they appear, then return. Otherwise, generate random examples indefinitely.
 
@@ -137,7 +139,7 @@ def example_generator(data_path, single_pass):
         example_str = struct.unpack('%ds' % str_len, reader.read(str_len))[0]
         yield example_pb2.Example.FromString(example_str)
     if single_pass:
-      print("example_generator completed reading all datafiles. No more datas.")
+      print("example_generator completed reading all datafiles. No more data.")
       break
 
 

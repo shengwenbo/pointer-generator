@@ -57,6 +57,7 @@ class BeamSearchDecoder(object):
       # Make a descriptive decode directory name
       ckpt_name = "ckpt-" + ckpt_path.split('-')[-1] # this is something of the form "ckpt-123456"
       self._decode_dir = os.path.join(FLAGS.log_root, get_decode_dir_name(ckpt_name))
+      print("Le decode dire est -->",self._decode_dir)
       if os.path.exists(self._decode_dir):
         raise Exception("single_pass decode directory %s should not already exist" % self._decode_dir)
 
@@ -75,7 +76,7 @@ class BeamSearchDecoder(object):
 
 
   def decode(self):
-    """Decode examples until datas is exhausted (if FLAGS.single_pass) and return, or decode indefinitely, loading latest checkpoint at regular intervals"""
+    """Decode examples until data is exhausted (if FLAGS.single_pass) and return, or decode indefinitely, loading latest checkpoint at regular intervals"""
     t0 = time.time()
     counter = 0
     while True:
@@ -143,7 +144,7 @@ class BeamSearchDecoder(object):
       decoded_words = decoded_words[fst_period_idx+1:] # everything else
       decoded_sents.append(' '.join(sent))
 
-    # pyrouge calls a perl script that puts the datas into HTML files.
+    # pyrouge calls a perl script that puts the data into HTML files.
     # Therefore we need to make our output HTML safe.
     decoded_sents = [make_html_safe(w) for w in decoded_sents]
     reference_sents = [make_html_safe(w) for w in reference_sents]
@@ -152,10 +153,10 @@ class BeamSearchDecoder(object):
     ref_file = os.path.join(self._rouge_ref_dir, "%06d_reference.txt" % ex_index)
     decoded_file = os.path.join(self._rouge_dec_dir, "%06d_decoded.txt" % ex_index)
 
-    with open(ref_file, "w") as f:
+    with open(ref_file, "w", encoding="utf8") as f:
       for idx,sent in enumerate(reference_sents):
         f.write(sent) if idx==len(reference_sents)-1 else f.write(sent+"\n")
-    with open(decoded_file, "w") as f:
+    with open(decoded_file, "w", encoding="utf8") as f:
       for idx,sent in enumerate(decoded_sents):
         f.write(sent) if idx==len(decoded_sents)-1 else f.write(sent+"\n")
 
@@ -163,7 +164,7 @@ class BeamSearchDecoder(object):
 
 
   def write_for_attnvis(self, article, abstract, decoded_words, attn_dists, p_gens):
-    """Write some datas to json file, which can be read into the in-browser attention visualizer tool:
+    """Write some data to json file, which can be read into the in-browser attention visualizer tool:
       https://github.com/abisee/attn_vis
 
     Args:
@@ -186,7 +187,7 @@ class BeamSearchDecoder(object):
     output_fname = os.path.join(self._decode_dir, 'attn_vis_data.json')
     with open(output_fname, 'w') as output_file:
       json.dump(to_write, output_file)
-    tf.logging.info('Wrote visualization datas to %s', output_fname)
+    tf.logging.info('Wrote visualization data to %s', output_fname)
 
 
 def print_results(article, abstract, decoded_output):
