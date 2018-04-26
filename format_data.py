@@ -100,6 +100,7 @@ def write_to_bin(input_file, out_file, makevocab=False, segment=False, repeat=1)
 
 def write_sent_pairs(article, abstract, writer):
     # Write to tf.Example
+    abstract = '%s %s %s' % (SENTENCE_START, abstract, SENTENCE_END)
     tf_example = example_pb2.Example()
     tf_example.features.feature['article'].bytes_list.value.extend([article.encode("utf-8")])
     tf_example.features.feature['abstract'].bytes_list.value.extend([abstract.encode("utf-8")])
