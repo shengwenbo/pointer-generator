@@ -242,6 +242,7 @@ class SummarizationModel(object):
       # Add the decoder.
       with tf.variable_scope('decoder'):
         decoder_outputs, self._dec_out_state, self.attn_dists, self.p_gens, self.coverage = self._add_decoder(emb_dec_inputs)
+        tf.summary.tensor_summary('attn_dist', self.attn_dists)
         # self._copy_tags = tf.get_variable('copy_tags', [self._hps.max_dec_steps], dtype=tf.int32, initializer=tf.ones_initializer())
 
       # Add the output projection to obtain the vocabulary distribution

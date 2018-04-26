@@ -45,8 +45,8 @@ tf.app.flags.DEFINE_string('log_root', '', 'Root directory for all logging.')
 tf.app.flags.DEFINE_string('exp_name', '', 'Name for experiment. Logs will be saved in a directory with this name, under log_root.')
 
 # Hyperparameters
-tf.app.flags.DEFINE_integer('hidden_dim', 100, 'dimension of RNN hidden states')
-tf.app.flags.DEFINE_integer('emb_dim', 100, 'dimension of word embeddings')
+tf.app.flags.DEFINE_integer('hidden_dim', 256, 'dimension of RNN hidden states')
+tf.app.flags.DEFINE_integer('emb_dim', 150, 'dimension of word embeddings')
 tf.app.flags.DEFINE_integer('batch_size', 16, 'minibatch size')
 tf.app.flags.DEFINE_integer('max_enc_steps', 20, 'max timesteps of encoder (max source text tokens)')
 tf.app.flags.DEFINE_integer('max_dec_steps', 20, 'max timesteps of decoder (max summary tokens)')
@@ -59,8 +59,8 @@ tf.app.flags.DEFINE_float('rand_unif_init_mag', 0.02, 'magnitude for lstm cells 
 tf.app.flags.DEFINE_float('trunc_norm_init_std', 1e-4, 'std of trunc norm init, used for initializing everything else')
 tf.app.flags.DEFINE_float('max_grad_norm', 2.0, 'for gradient clipping')
 tf.app.flags.DEFINE_integer('max_round', 5, 'max training round, -1 for infinity')
-tf.app.flags.DEFINE_float('dropout_keep_prob', 1, 'dropout keep probability')
-tf.app.flags.DEFINE_integer('encoder_layers',1,'encoder layers count')
+tf.app.flags.DEFINE_float('dropout_keep_prob', 0.7, 'dropout keep probability')
+tf.app.flags.DEFINE_integer('encoder_layers',4,'encoder layers count')
 tf.app.flags.DEFINE_integer('decoder_layers', 1, 'decoder layers count')
 
 # Pointer-generator or baseline model
